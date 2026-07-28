@@ -1,0 +1,374 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ChessBot AI</title>
+    <script crossorigin src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
+    <script crossorigin src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
+    <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+    <script src="https://cdn.tailwindcss.com"></script>
+</head>
+
+<body>
+    <div id="root"></div>
+
+    <script type="text/babel">
+        const { useState, useEffect } = React;
+
+        // Lucide React Icons (inline SVG components)
+        const Crown = ({ className, size = 24 }) => (
+            <svg className={className} width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                <path d="M2 12l3-3 3 3 4-8 4 8 3-3 3 3v7H2z" />
+            </svg>
+        );
+
+        const Zap = ({ className, size = 24 }) => (
+            <svg className={className} width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                <polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2" />
+            </svg>
+        );
+
+        const RefreshCw = ({ className, size = 24 }) => (
+            <svg className={className} width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                <polyline points="23 4 23 10 17 10" />
+                <polyline points="1 20 1 14 7 14" />
+                <path d="M3.51 9a9 9 0 0 1 14.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0 0 20.49 15" />
+            </svg>
+        );
+
+        const AlertCircle = ({ className, size = 24 }) => (
+            <svg className={className} width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                <circle cx="12" cy="12" r="10" />
+                <line x1="12" y1="8" x2="12" y2="12" />
+                <line x1="12" y1="16" x2="12.01" y2="16" />
+            </svg>
+        );
+
+        const ChessBotUI = () => {
+            const [board, setBoard] = useState([]);
+            const [selectedSquare, setSelectedSquare] = useState(null);
+            const [currentTurn, setCurrentTurn] = useState('white');
+            const [aiSuggestions, setAiSuggestions] = useState([]);
+            const [gameHistory, setGameHistory] = useState([]);
+            const [loading, setLoading] = useState(false);
+            const [backendUrl, setBackendUrl] = useState('http://localhost:5000');
+            const [connectionStatus, setConnectionStatus] = useState('disconnected');
+
+            useEffect(() => {
+                initializeBoard();
+            }, []);
+
+            const initializeBoard = () => {
+                const initialBoard = [
+                    ['r', 'n', 'b', 'q', 'k', 'b', 'n', 'r'],
+                    ['p', 'p', 'p', 'p', 'p', 'p', 'p', 'p'],
+                    [null, null, null, null, null, null, null, null],
+                    [null, null, null, null, null, null, null, null],
+                    [null, null, null, null, null, null, null, null],
+                    [null, null, null, null, null, null, null, null],
+                    ['P', 'P', 'P', 'P', 'P', 'P', 'P', 'P'],
+                    ['R', 'N', 'B', 'Q', 'K', 'B', 'N', 'R']
+                ];
+                setBoard(initialBoard);
+                setGameHistory([]);
+                setAiSuggestions([]);
+                setCurrentTurn('white');
+            };
+
+            const getPieceSymbol = (piece) => {
+                const symbols = {
+                    'K': '♔', 'Q': '♕', 'R': '♖', 'B': '♗', 'N': '♘', 'P': '♙',
+                    'k': '♚', 'q': '♛', 'r': '♜', 'b': '♝', 'n': '♞', 'p': '♟'
+                };
+                return symbols[piece] || '';
+            };
+
+            const isWhitePiece = (piece) => piece && piece === piece.toUpperCase();
+            const isBlackPiece = (piece) => piece && piece === piece.toLowerCase();
+
+            const handleSquareClick = async (row, col) => {
+                if (loading) return;
+
+                const piece = board[row][col];
+
+                if (selectedSquare) {
+                    const [fromRow, fromCol] = selectedSquare;
+                    const fromPiece = board[fromRow][fromCol];
+
+                    if ((currentTurn === 'white' && isWhitePiece(fromPiece)) ||
+                        (currentTurn === 'black' && isBlackPiece(fromPiece))) {
+
+                        if (fromRow !== row || fromCol !== col) {
+                            makeMove(fromRow, fromCol, row, col);
+                        }
+                    }
+                    setSelectedSquare(null);
+                } else {
+                    if ((currentTurn === 'white' && isWhitePiece(piece)) ||
+                        (currentTurn === 'black' && isBlackPiece(piece))) {
+                        setSelectedSquare([row, col]);
+                    }
+                }
+            };
+
+            const makeMove = async (fromRow, fromCol, toRow, toCol) => {
+                const newBoard = board.map(row => [...row]);
+                const piece = newBoard[fromRow][fromCol];
+
+                newBoard[toRow][toCol] = piece;
+                newBoard[fromRow][fromCol] = null;
+
+                setBoard(newBoard);
+
+                const move = {
+                    from: `${String.fromCharCode(97 + fromCol)}${8 - fromRow}`,
+                    to: `${String.fromCharCode(97 + toCol)}${8 - toRow}`,
+                    piece: piece
+                };
+
+                setGameHistory([...gameHistory, move]);
+                setCurrentTurn(currentTurn === 'white' ? 'black' : 'white');
+
+                await getAISuggestions(newBoard, currentTurn === 'white' ? 'black' : 'white');
+            };
+
+            const getAISuggestions = async (currentBoard, turn) => {
+                setLoading(true);
+                setConnectionStatus('connecting');
+
+                try {
+                    const response = await fetch(`${backendUrl}/api/suggest`, {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json',
+                        },
+                        body: JSON.stringify({
+                            board: currentBoard,
+                            turn: turn,
+                            history: gameHistory
+                        })
+                    });
+
+                    if (!response.ok) {
+                        throw new Error('Backend connection failed');
+                    }
+
+                    const data = await response.json();
+                    setAiSuggestions(data.suggestions || []);
+                    setConnectionStatus('connected');
+                } catch (error) {
+                    console.error('Error getting AI suggestions:', error);
+                    setConnectionStatus('error');
+                    setAiSuggestions([
+                        { move: 'Connection failed', score: 0, description: 'Unable to reach backend' }
+                    ]);
+                } finally {
+                    setLoading(false);
+                }
+            };
+
+            const applySuggestion = (suggestion) => {
+                if (!suggestion.from || !suggestion.to) return;
+
+                const fromCol = suggestion.from.charCodeAt(0) - 97;
+                const fromRow = 8 - parseInt(suggestion.from[1]);
+                const toCol = suggestion.to.charCodeAt(0) - 97;
+                const toRow = 8 - parseInt(suggestion.to[1]);
+
+                makeMove(fromRow, fromCol, toRow, toCol);
+            };
+
+            const isSuggestedMove = (row, col) => {
+                return aiSuggestions.some(s => {
+                    if (!s.to) return false;
+                    const sugCol = s.to.charCodeAt(0) - 97;
+                    const sugRow = 8 - parseInt(s.to[1]);
+                    return sugRow === row && sugCol === col;
+                });
+            };
+
+            return (
+                <div className="min-h-screen bg-gradient-to-br from-slate-900 via-purple-900 to-slate-900 p-8">
+                    <div className="max-w-7xl mx-auto">
+                        <div className="text-center mb-8">
+                            <h1 className="text-5xl font-bold text-white mb-2 flex items-center justify-center gap-3">
+                                <Crown className="text-yellow-400" size={48} />
+                                ChessBot AI
+                            </h1>
+                            <p className="text-purple-200">ML-Powered Chess Move Suggestions</p>
+                        </div>
+
+                        <div className="grid lg:grid-cols-3 gap-6">
+                            <div className="lg:col-span-2">
+                                <div className="bg-slate-800/50 backdrop-blur rounded-xl p-6 shadow-2xl border border-purple-500/20">
+                                    <div className="flex justify-between items-center mb-4">
+                                        <div className={`px-4 py-2 rounded-lg ${currentTurn === 'white' ? 'bg-white text-black' : 'bg-slate-900 text-white'}`}>
+                                            Turn: {currentTurn.toUpperCase()}
+                                        </div>
+                                        <button
+                                            onClick={initializeBoard}
+                                            className="flex items-center gap-2 px-4 py-2 bg-purple-600 hover:bg-purple-700 text-white rounded-lg transition"
+                                        >
+                                            <RefreshCw size={18} />
+                                            Reset
+                                        </button>
+                                    </div>
+
+                                    <div className="inline-block border-4 border-slate-700 rounded-lg overflow-hidden shadow-2xl">
+                                        {board.map((row, rowIndex) => (
+                                            <div key={rowIndex} className="flex">
+                                                {row.map((piece, colIndex) => {
+                                                    const isLight = (rowIndex + colIndex) % 2 === 0;
+                                                    const isSelected = selectedSquare && selectedSquare[0] === rowIndex && selectedSquare[1] === colIndex;
+                                                    const isSuggested = isSuggestedMove(rowIndex, colIndex);
+
+                                                    return (
+                                                        <div
+                                                            key={`${rowIndex}-${colIndex}`}
+                                                            onClick={() => handleSquareClick(rowIndex, colIndex)}
+                                                            className={`
+                                    w-16 h-16 flex items-center justify-center text-4xl cursor-pointer
+                                    transition-all duration-200 relative
+                                    ${isLight ? 'bg-amber-100' : 'bg-amber-700'}
+                                    ${isSelected ? 'ring-4 ring-blue-500 ring-inset' : ''}
+                                    ${isSuggested ? 'ring-4 ring-green-400 ring-inset' : ''}
+                                    hover:opacity-80
+                                  `}
+                                                        >
+                                                            {piece && (
+                                                                <span className={isWhitePiece(piece) ? 'text-white drop-shadow-lg' : 'text-black drop-shadow-sm'}>
+                                                                    {getPieceSymbol(piece)}
+                                                                </span>
+                                                            )}
+                                                            {isSuggested && (
+                                                                <div className="absolute top-1 right-1">
+                                                                    <Zap size={14} className="text-green-400" />
+                                                                </div>
+                                                            )}
+                                                        </div>
+                                                    );
+                                                })}
+                                            </div>
+                                        ))}
+                                    </div>
+                                </div>
+                            </div>
+
+                            <div className="space-y-6">
+                                <div className="bg-slate-800/50 backdrop-blur rounded-xl p-4 border border-purple-500/20">
+                                    <h3 className="text-white font-semibold mb-3 flex items-center gap-2">
+                                        <AlertCircle size={18} />
+                                        Backend Connection
+                                    </h3>
+                                    <input
+                                        type="text"
+                                        value={backendUrl}
+                                        onChange={(e) => setBackendUrl(e.target.value)}
+                                        placeholder="http://localhost:5000"
+                                        className="w-full px-3 py-2 bg-slate-900 text-white rounded-lg border border-slate-700 mb-2"
+                                    />
+                                    <div className="flex items-center gap-2">
+                                        <div className={`w-3 h-3 rounded-full ${connectionStatus === 'connected' ? 'bg-green-500' :
+                                            connectionStatus === 'connecting' ? 'bg-yellow-500 animate-pulse' :
+                                                'bg-red-500'
+                                            }`} />
+                                        <span className="text-sm text-slate-300">
+                                            {connectionStatus === 'connected' ? 'Connected' :
+                                                connectionStatus === 'connecting' ? 'Connecting...' :
+                                                    'Disconnected'}
+                                        </span>
+                                    </div>
+                                </div>
+
+                                <div className="bg-slate-800/50 backdrop-blur rounded-xl p-4 border border-purple-500/20">
+                                    <h3 className="text-white font-semibold mb-3 flex items-center gap-2">
+                                        <Zap className="text-yellow-400" size={18} />
+                                        AI Suggestions {loading && <span className="text-sm text-purple-300">(Loading...)</span>}
+                                    </h3>
+                                    <div className="space-y-2 max-h-96 overflow-y-auto">
+                                        {aiSuggestions.length > 0 ? (
+                                            aiSuggestions.map((suggestion, index) => (
+                                                <div
+                                                    key={index}
+                                                    onClick={() => applySuggestion(suggestion)}
+                                                    className="bg-slate-900/50 p-3 rounded-lg cursor-pointer hover:bg-slate-700/50 transition border border-slate-700"
+                                                >
+                                                    <div className="flex justify-between items-start mb-1">
+                                                        <span className="text-white font-mono">
+                                                            {suggestion.move || `${suggestion.from} → ${suggestion.to}`}
+                                                        </span>
+                                                        {suggestion.score !== undefined && (
+                                                            <span className="text-green-400 text-sm">
+                                                                Score: {suggestion.score.toFixed(2)}
+                                                            </span>
+                                                        )}
+                                                    </div>
+                                                    {suggestion.description && (
+                                                        <p className="text-slate-400 text-sm">{suggestion.description}</p>
+                                                    )}
+                                                </div>
+                                            ))
+                                        ) : (
+                                            <p className="text-slate-400 text-sm">Make a move to get AI suggestions</p>
+                                        )}
+                                    </div>
+                                </div>
+
+                                <div className="bg-slate-800/50 backdrop-blur rounded-xl p-4 border border-purple-500/20">
+                                    <h3 className="text-white font-semibold mb-3">Move History</h3>
+                                    <div className="space-y-1 max-h-48 overflow-y-auto">
+                                        {gameHistory.length > 0 ? (
+                                            gameHistory.map((move, index) => (
+                                                <div key={index} className="text-slate-300 text-sm font-mono">
+                                                    {index + 1}. {getPieceSymbol(move.piece)} {move.from} → {move.to}
+                                                </div>
+                                            ))
+                                        ) : (
+                                            <p className="text-slate-400 text-sm">No moves yet</p>
+                                        )}
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div className="mt-8 bg-slate-800/50 backdrop-blur rounded-xl p-6 border border-purple-500/20">
+                            <h3 className="text-white font-semibold mb-3">Backend Integration Instructions</h3>
+                            <div className="text-slate-300 text-sm space-y-2">
+                                <p><strong>API Endpoint:</strong> POST {backendUrl}/api/suggest</p>
+                                <p><strong>Request Format:</strong></p>
+                                <pre className="bg-slate-900 p-3 rounded text-xs overflow-x-auto">
+                                    {`{
+  "board": [8x8 array],  // Current board state
+  "turn": "white|black", // Current player
+  "history": []          // Previous moves
+}`}
+                                </pre>
+                                <p><strong>Expected Response:</strong></p>
+                                <pre className="bg-slate-900 p-3 rounded text-xs overflow-x-auto">
+                                    {`{
+  "suggestions": [
+    {
+      "from": "e2",        // Start position
+      "to": "e4",          // End position
+      "move": "e2-e4",     // Move notation
+      "score": 0.85,       // Confidence score
+      "description": "..."  // Optional explanation
+    }
+  ]
+}`}
+                                </pre>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            );
+        };
+
+        // Render the app
+        ReactDOM.createRoot(document.getElementById('root')).render(<ChessBotUI />);
+    </script>
+</body>
+
+</html>
