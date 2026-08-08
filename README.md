@@ -1,22 +1,21 @@
 # ♚ AI Chess Bot - Master ML Chess Platform
 ♟️ Chess AI
 
-An AI-powered chess application that lets you play chess against an intelligent computer opponent. The project combines a modern React frontend with a Flask backend and a trained ML model to generate chess moves.
+## ✨ Features
 
-✨ Features
-♟️ Play chess against an AI opponent
-🤖 AI-powered move prediction
-📊 Chess position analysis
-⚡ Fast and responsive gameplay
-🎨 Clean and interactive chess board UI
-🔌 React frontend connected with Flask API
-🛠️ Tech Stack
+- ♟️ Play chess against an AI opponent
+- 🤖 AI-powered move prediction
+- 📊 Chess position analysis
+- ⚡ Fast and responsive gameplay
+- 🎨 Clean and interactive chess board UI
+- 🔌 React frontend connected with Flask API
 
-Frontend: React, Vite, Chess.js
-Backend: Flask, Python
-AI/ML: TensorFlow / Keras
-Database: MongoDB
+## 🛠️ Tech Stack
 
+**Frontend:** React, Vite, Chess.js
+**Backend:** Flask, Python
+**AI/ML:** TensorFlow / Keras
+**Database:** MongoDB
 
 A production-ready SaaS AI Chess application built with **React 19**, **Vite**, **Chess.js**, **Framer Motion**, and a **TensorFlow/Keras Machine Learning model** hosted on a **Flask REST API** with optional **MongoDB** storage.
 
