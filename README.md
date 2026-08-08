@@ -7,6 +7,11 @@ An AI-powered chess application that lets you play chess against an intelligent 
 ♟️ Play chess against an AI opponent
 🤖 AI-powered move prediction
 📊 Chess position analysis
+⚡ Fast and responsive gameplay
+🎨 Clean and interactive chess board UI
+🔌 React frontend connected with Flask API
+🛠️ Tech Stack
+
 
 
 A production-ready SaaS AI Chess application built with **React 19**, **Vite**, **Chess.js**, **Framer Motion**, and a **TensorFlow/Keras Machine Learning model** hosted on a **Flask REST API** with optional **MongoDB** storage.
