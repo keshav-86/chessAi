@@ -12,6 +12,10 @@ An AI-powered chess application that lets you play chess against an intelligent 
 🔌 React frontend connected with Flask API
 🛠️ Tech Stack
 
+Frontend: React, Vite, Chess.js
+Backend: Flask, Python
+AI/ML: TensorFlow / Keras
+Database: MongoDB
 
 
 A production-ready SaaS AI Chess application built with **React 19**, **Vite**, **Chess.js**, **Framer Motion**, and a **TensorFlow/Keras Machine Learning model** hosted on a **Flask REST API** with optional **MongoDB** storage.
